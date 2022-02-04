@@ -5,14 +5,38 @@ import pygame
 import requests
 
 
+def reverse_geocode(ll):
+    geocoder_request_template = "http://geocode-maps.yandex.ru/1.x/?apikey=40d1649f-0493-4b70-98ba-98533de7710b&geocode={ll}&format=json"
+
+    # Выполняем запрос к геокодеру, анализируем ответ.
+    geocoder_request = geocoder_request_template.format(**locals())
+    response = requests.get(geocoder_request)
+
+    if not response:
+        raise RuntimeError(
+            """Ошибка выполнения запроса:
+            {request}
+            Http статус: {status} ({reason})""".format(
+                request=geocoder_request, status=response.status_code, reason=response.reason))
+
+    # Преобразуем ответ в json-объект
+    json_response = response.json()
+
+    # Получаем первый топоним из ответа геокодера.
+    features = json_response["response"]["GeoObjectCollection"]["featureMember"]
+    return features[0]["GeoObject"] if features else None
+
+
 class MapSettings:
     def __init__(self):
-        self.lat = 55.124111
-        self.lon = 51.765334
-        self.zoom = 20
+        self.lat = 51.765334
+        self.lon = 55.124111
+        self.zoom = 15
         self.type = "map"
         self.search_result = None
 
+    def ll(self):
+        return "{0},{1}".format(self.lon, self.lat)
 
 
 def map_create(MapSettings):
@@ -45,6 +69,7 @@ def map_create(MapSettings):
         sys.exit(2)
 
     return map_file
+
 
 def main():
     pygame.init()
