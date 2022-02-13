@@ -3,6 +3,7 @@ import sys
 
 import pygame
 import requests
+import math
 
 
 def reverse_geocode(ll):
@@ -38,11 +39,12 @@ class MapSettings:
     def ll(self):
         return "{0},{1}".format(self.lon, self.lat)
 
+    def set_zoom(self, new_zoom):
+        self.zoom += new_zoom
 
-def map_create(MapSettings):
-    mp = MapSettings()
+
+def map_create(mp):
     map_request = "http://static-maps.yandex.ru/1.x/"
-
     params = {
         'll': mp.ll(),
         'z': mp.zoom,
@@ -75,23 +77,40 @@ def main():
     pygame.init()
     screen = pygame.display.set_mode((600, 450))
     mp = MapSettings()
+    map_file = map_create(mp)
     running = True
     while running:
-        event = pygame.event.wait()
-        if event.type == pygame.QUIT:
-            break
-        elif event.type == pygame.MOUSEBUTTONUP:
-            if event.button == 1:
-                pass
-        else:
-            continue
-
-        map_file = map_create(MapSettings)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    pass
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_PAGEDOWN:
+                    if mp.zoom != 2:
+                        mp.set_zoom(-1)
+                if event.key == pygame.K_PAGEUP:
+                    if mp.zoom != 19:
+                        mp.set_zoom(1)
+                if event.key == pygame.K_LEFT:
+                    mp.lon -= 0.02 * math.pow(2, 13 - mp.zoom)
+                if event.key == pygame.K_RIGHT:
+                    mp.lon += 0.02 * math.pow(2, 13 - mp.zoom)
+                if event.key == pygame.K_UP:
+                    if mp.lat < 85:
+                        mp.lat += 0.008 * math.pow(2, 13 - mp.zoom)
+                if event.key == pygame.K_DOWN:
+                    if mp.lat > -85:
+                        mp.lat -= 0.008 * math.pow(2, 13 - mp.zoom)
+        map_file = map_create(mp)
         screen.blit(pygame.image.load(map_file), (0, 0))
         pygame.display.flip()
 
     pygame.quit()
+    os.remove(map_file)
 
 
 if __name__ == "__main__":
     main()
+
